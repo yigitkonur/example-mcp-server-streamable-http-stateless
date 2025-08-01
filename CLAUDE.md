@@ -28,6 +28,9 @@ This is a **Streamable HTTP Stateless MCP Server** - a reference implementation 
 # Install dependencies
 npm install
 
+# Install TypeScript declarations (if build fails)
+npm install --save-dev @types/express @types/cors
+
 # Build (critical: requires ES modules with "bundler" moduleResolution)
 npm run build
 
