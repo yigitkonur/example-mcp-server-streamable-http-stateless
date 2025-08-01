@@ -72,7 +72,7 @@ The core of this architecture is the `handleMCPRequest` function in `stateless-p
 
 ## ✨ Feature Compliance
 
-This server implements a minimal, stateless version of the MCP Latest Standard. Features requiring state are explicitly not implemented.
+This server implements a minimal, stateless version of the MCP Golden Standard. Features requiring state are explicitly not implemented.
 
 | Name | Status | Implementation |
 |:------|:--------|:----------------|
@@ -266,8 +266,18 @@ curl -s http://localhost:1071/health | jq
 }
 ```
 
-## 📚 Official Resources
+## 📚 Project Resources
 
 *   [MCP Specification](https://spec.modelcontextprotocol.io)
 *   [Model Context Protocol Documentation](https://modelcontextprotocol.io)
 *   [Streamable HTTP Transport Documentation](https://spec.modelcontextprotocol.io/specification/basic/transports/#streamable-http)
+
+## 📝 License
+
+This project is licensed under the MIT License.
+
+---
+
+<p align="center">
+  ✅ <strong>Stateless Reference Implementation - MCP Learning Edition</strong>
+</p>
