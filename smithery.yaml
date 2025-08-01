@@ -1,0 +1,18 @@
+configSchema:
+  type: object
+  properties: {}
+  required: []
+
+startCommand:
+  type: http             # transport is still HTTP
+  stateless: true        # key that tells Smithery to reuse pool
+  healthPath: /health    # Smithery will poll this
+  commandFunction: |
+    () => ({
+      command: 'node',
+      args: [
+        'dist/stateless-production-server.js',
+        '--port', '8080'
+      ],
+      env: { PORT: 8080 }
+    })
