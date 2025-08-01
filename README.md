@@ -1,109 +1,113 @@
-# Calculator Learning Demo - Streamable HTTP Stateless Transport
+# Calculator Learning Demo - Streamable HTTP (Stateless) Transport
 
 <div align="center">
 
 [![MCP Version](https://img.shields.io/badge/MCP-1.0.0-blue)](https://modelcontextprotocol.io)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org/)
+[![Architecture](https://img.shields.io/badge/Architecture-Stateless-green)](https://spec.modelcontextprotocol.io/specification/basic/transports/#streamable-http)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Stateless OK ✅](https://img.shields.io/badge/Stateless-OK%20✅-green)](https://github.com/modelcontextprotocol/stateless-reference)
 
 </div>
 
 ## 🎯 Overview
 
-This repository demonstrates a **learning-edition MCP calculator server using Streamable HTTP transport in stateless mode**. It showcases true serverless architecture with zero server-side state, perfect for edge computing and infinite horizontal scaling.
+This repository provides a reference implementation of an **MCP calculator server using Streamable HTTP transport in a truly stateless mode**. It is architected for maximum scalability and is optimized for serverless and edge computing environments.
+
+The core design principle is that the server holds **zero state** between requests. Every incoming request is atomic and self-contained. This design choice enables perfect horizontal scaling and eliminates an entire class of state-related complexities and vulnerabilities.
 
 ### Key Characteristics
 
-- **True statelessness**: No `Mcp-Session-Id`, no server-side memory
-- **Infinite scalability**: Any server can handle any request
-- **Serverless-ready**: Works with AWS Lambda, Vercel, Cloudflare Workers
-- **No resumability**: Each request is completely independent
-- **Perfect for**: Edge computing, serverless functions, CDN deployment
+-   **Zero State Persistence**: The server retains no memory of past requests. No sessions, no history.
+-   **Per-Request Lifecycle**: A new MCP server instance is created for every HTTP request and is destroyed immediately after the response stream closes.
+-   **Infinite Scalability**: Since no state is shared, any server instance in a cluster can handle any request, making load balancing trivial (e.g., round-robin).
+-   **No Resumability**: By design, if a connection is lost, the client must initiate a completely new request. There is no session to resume.
+-   **Ideal Use Case**: Edge functions (Vercel, Cloudflare), serverless computing (AWS Lambda), and any application where horizontal scalability is paramount.
 
-### Stateless Design Philosophy
+## 📊 Transport Comparison
 
-The **sessionless design** means all cross-call state must be kept client-side or in external storage. The server treats each request as completely independent, enabling perfect horizontal scaling and zero-downtime deployments.
+This table compares the four primary MCP transport mechanisms. The implementation in **this repository is highlighted**.
 
-## 📊 Transport Comparison Table
+| Dimension | STDIO | SSE (Legacy) | Streamable HTTP (Stateful) | **Streamable HTTP (Stateless)** |
+|:-----------|:-----------|:---------|:---------------------|:-------------------------------|
+| **Transport Layer** | Local Pipes (`stdin`/`stdout`) | 2 × HTTP endpoints (`GET`+`POST`) | Single HTTP endpoint `/mcp` | ✅ **Single HTTP endpoint `/mcp`** |
+| **Bidirectional Stream** | ✅ Yes (full duplex) | ⚠️ Server→Client only | ✅ Yes (server push + client stream) | ✅ **Yes (within each request)** |
+| **State Management** | Ephemeral (Process Memory) | Ephemeral (Session Memory) | Persistent (Session State) | ❌ **None (Stateless)** |
+| **Resumability** | ❌ None | ❌ None | ✅ Yes (`Last-Event-Id`) | ❌ **None (by design)** |
+| **Scalability** | ⚠️ Single Process | ✅ Multi-Client | ✅ Horizontal (Sticky Sessions) | ♾️ **Infinite (Serverless)** |
+| **Security** | 🔒 Process Isolation | 🌐 Network Exposed | 🌐 Network Exposed | 🌐 **Network Exposed** |
+| **Ideal Use Case** | CLI Tools, IDE Plugins | Legacy Web Apps | Enterprise APIs, Workflows | ✅ **Serverless, Edge Functions** |
 
-| Dimension | **STDIO** | **SSE** | **Streamable HTTP** | **Streamable HTTP Stateless** (this) |
-|-----------|-----------|---------|---------------------|---------------------------------------|
-| **Transport layer** | Local pipes (`stdin`/`stdout`) | 2 × HTTP endpoints (`GET /connect` + `POST /messages`) | Single HTTP endpoint `/mcp` (JSON or SSE) | **Single HTTP endpoint (per request)** |
-| **Bidirectional streaming** | ✅ Yes (full duplex) | ⚠️ Server→client only | ✅ Yes (server push + client stream) | ✅ **Within each request** |
-| **State management** | Process memory | Server memory (session mapping) | Session-based (`Mcp-Session-Id`) | ❌ **None (stateless)** |
-| **Latency** | ⚡ Fastest (microseconds) | 🚀 Good (after connection) | 💫 Moderate (HTTP overhead) | 💫 **Moderate** |
-| **Security** | 🔒 Process isolation | 🌐 Network exposed | 🌐 Network exposed | 🌐 **Network exposed** |
-| **Scalability** | ⚠️ Single process | ✅ Multi-client | ✅ Horizontal (with sticky sessions) | ♾️ **Infinite (stateless)** |
-| **Ideal use case** | Local CLI tools, IDE plugins | Web apps, real-time updates | Enterprise APIs, complex workflows | **Serverless, edge computing** |
+## 📐 Architecture and Flow
 
-## 🔄 Stateless Transport Flow
+The stateless transport treats every request as a new, independent interaction. A fresh MCP server instance is created for each incoming request and destroyed once the response is complete. This eliminates the need for session management and allows any server in a cluster to handle any request.
 
 ```mermaid
 sequenceDiagram
     participant Client
-    participant Load Balancer  
+    participant Load Balancer
     participant Server A
     participant Server B
-    
+
     Note over Client,Server B: No Session Handshake Required
-    
-    Client->>Load Balancer: POST /mcp (request 1)
+
+    Client->>Load Balancer: POST /mcp (Request 1)
     Load Balancer->>Server A: Route to any available server
-    Server A-->>Load Balancer: Process independently
-    Load Balancer-->>Client: 200 OK + SSE stream
-    
-    Note over Client,Server B: Next Request - Different Server OK
-    
-    Client->>Load Balancer: POST /mcp (request 2)  
-    Load Balancer->>Server B: Route to different server
-    Server B-->>Load Balancer: Process independently
-    Load Balancer-->>Client: 200 OK + SSE stream
+    Server A-->>Load Balancer: Process and respond
+    Load Balancer-->>Client: 200 OK with response stream
+
+    Note over Client,Server B: Next request can go to a different server
+
+    Client->>Load Balancer: POST /mcp (Request 2)
+    Load Balancer->>Server B: Route to any available server
+    Server B-->>Load Balancer: Process and respond independently
+    Load Balancer-->>Client: 200 OK with response stream
 ```
 
-Each request is completely self-contained with no server-side state dependency. Any server instance can handle any request without coordination.
+The core of this architecture is the `handleMCPRequest` function in `stateless-production-server.ts`, which performs the following for every call:
+1.  Creates a new `McpServer` instance using the `createMCPServer` factory.
+2.  Creates a new `StreamableHTTPServerTransport` configured for stateless operation (`sessionIdGenerator: undefined`).
+3.  Connects the server and transport.
+4.  Processes the HTTP request and streams the response.
+5.  Listens for the `response.on('close', ...)` event to tear down and garbage-collect both the server and transport instances.
 
-## 📊 Golden Standard Feature Matrix
+## ✨ Feature Compliance
+
+This server implements a minimal, stateless version of the MCP Golden Standard. Features requiring state are explicitly not implemented.
 
 | Name | Status | Implementation |
-|------|--------|----------------|
-| `calculate` | **Core ✅** | Basic arithmetic with streaming support - `{a,b,op,stream?}` signature |
-| `batch_calculate` | **NOT_IMPLEMENTED** | Returns JSON-RPC error `-32601` (stateless design doesn't include batch) |
-| `advanced_calculate` | **NOT_IMPLEMENTED** | Returns JSON-RPC error `-32601` (not included in minimal stateless demo) |
-| `demo_progress` | **Extended ✅** | Emits 5 SSE `progress` events at 200ms intervals, then final result |
-| `explain-calculation` | **Core ✅** | Returns Markdown explanation - fully stateless implementation |
-| `generate-problems` | **Core ✅** | Returns Markdown practice problems - no state required |
-| `calculator-tutor` | **Core ✅** | Returns Markdown tutoring content - stateless prompt generation |
-| `solve_math_problem` | **Stub** | Returns `"Available in extended build"` with code `-32004` |
-| `explain_formula` | **Stub** | Returns `"Available in extended build"` with code `-32004` |
-| `calculator_assistant` | **Stub** | Returns `"Available in extended build"` with code `-32004` |
-| `calculator://constants` | **Core ✅** | Static mathematical constants (π, e, φ, √2, ln2, ln10) |
-| `calculator://history/{id}` | **Always 404** | Returns `404 Not Found` - no history in stateless mode |
-| `calculator://stats` | **Core ✅** | Process uptime only - `{ uptimeMs: process.uptime() * 1000 }` |
-| `formulas://library` | **Extended ✅** | Static JSON list of ~10 mathematical formulas |
-| `request://current` | **Extended ✅** | Debug resource - echoes HTTP headers & RPC envelope |
+|:------|:--------|:----------------|
+| `calculate` | **Core ✅** | Basic arithmetic with optional streaming progress. |
+| `batch_calculate` | **Not Implemented** | Returns error `-32601`, as this is not part of the stateless demo. |
+| `advanced_calculate`| **Not Implemented** | Returns error `-32601`, not included in this build. |
+| `demo_progress` | **Extended ✅** | Emits 5 SSE `progress` events, then the final result. |
+| `explain-calculation`| **Core ✅** | Returns a stateless Markdown explanation. |
+| `generate-problems` | **Core ✅** | Returns stateless Markdown practice problems. |
+| `calculator-tutor` | **Core ✅** | Returns stateless Markdown tutoring content. |
+| `solve_math_problem`| **Stub** | Returns error `-32004 Available in extended build`. |
+| `explain_formula` | **Stub** | Returns error `-32004 Available in extended build`. |
+| `calculator_assistant`| **Stub** | Returns error `-32004 Available in extended build`. |
+| `calculator://constants`| **Core ✅** | Resource for static mathematical constants. |
+| `calculator://history/{id}`| **Not Implemented** | Always returns a `404 Not Found` error. |
+| `calculator://stats`| **Core ✅** | Resource for process uptime only; no request counters. |
+| `formulas://library`| **Extended ✅** | Resource for a static list of mathematical formulas. |
+| `request://current`| **Extended ✅**| Debug resource that echoes current request info. |
 
-**✅ 4 core tools, 3 core prompts, and 3 working resources confirmed in stateless configuration**
-
-## 🚀 Quick Start
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- Node.js 20.x or higher
-- npm or yarn
+*   Node.js (v20.x or higher)
+*   npm or yarn
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone <repository-url>
-cd calculator-learning-demo-stateless
+git clone https://github.com/modelcontextprotocol/mcp-server-examples.git
+cd mcp-server-examples/streamable-http-stateless
 
 # Install dependencies
 npm install
-
-# Install TypeScript declarations (if needed)
-npm install --save-dev @types/express @types/cors
 
 # Build the project
 npm run build
@@ -112,79 +116,55 @@ npm run build
 ### Running the Server
 
 ```bash
-# Start the stateless server (port 1071)
+# Start the stateless server on port 1071
 npm run start:stateless
 
-# Development mode with auto-reload
+# Or, run in development mode with auto-reload
 npm run dev
-
-# Run as serverless function
-npm run start:serverless
 ```
 
-The server will start on `http://localhost:1071`
+### Testing with MCP Inspector
 
-## 📋 API Examples
-
-### Basic Calculation (No Session Required)
+You can interact with the running server using the official MCP Inspector CLI. Ensure the server is running first.
 
 ```bash
-curl -N -X POST http://localhost:1071/mcp \
+# The CLI will connect to the server and list its capabilities
+npx @modelcontextprotocol/inspector http://localhost:1071/mcp
+```
+
+## 📋 API Usage Examples
+
+All requests are made to the single `/mcp` endpoint. No session headers are required.
+
+### Basic Calculation
+
+```bash
+curl -X POST http://localhost:1071/mcp \
      -H 'Content-Type: application/json' \
      -d '[{
        "jsonrpc": "2.0",
-       "id": 1,
+       "id": "req-1",
        "method": "tools/call",
        "params": {
          "name": "calculate",
-         "arguments": {
-           "a": 15,
-           "b": 7,
-           "op": "multiply"
-         }
+         "arguments": { "a": 100, "b": 5, "op": "divide", "precision": 4 }
        }
      }]'
 
 # Response:
-{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"Result: 105"}]}}
+# {"jsonrpc":"2.0","id":"req-1","result":{"content":[{"type":"text","text":"DIVIDE: 100 ÷ 5 = 20\n\nSteps:\nInput: 100 divide 5\nDivision: 100 ÷ 5 = 20\nFinal result (4 decimal places): 20"}],"metadata":{...}}}
 ```
 
-### Streaming Calculation
+### Streaming Progress Demonstration
+
+Use the `-N` (no-buffering) flag with `curl` to see the Server-Sent Events (SSE) as they arrive.
 
 ```bash
 curl -N -X POST http://localhost:1071/mcp \
      -H 'Content-Type: application/json' \
      -d '[{
        "jsonrpc": "2.0",
-       "id": 2,
-       "method": "tools/call",
-       "params": {
-         "name": "calculate",
-         "arguments": {
-           "a": 100,
-           "b": 25,
-           "op": "divide",
-           "stream": true
-         }
-       }
-     }]'
-
-# Expected SSE output:
-event: data
-data: {"partial": "Processing..."}
-
-event: data  
-data: {"result": 4}
-```
-
-### Progress Demonstration
-
-```bash
-curl -N -X POST http://localhost:1071/mcp \
-     -H 'Content-Type: application/json' \
-     -d '[{
-       "jsonrpc": "2.0",
-       "id": 3,
+       "id": "req-2",
        "method": "tools/call",
        "params": {
          "name": "demo_progress",
@@ -192,209 +172,112 @@ curl -N -X POST http://localhost:1071/mcp \
        }
      }]'
 
-# Expected SSE progress events:
-event: progress
-data: {"progress": 20, "total": 100}
-
-event: progress
-data: {"progress": 40, "total": 100}
-# ... continues to 100%
+# Expected SSE stream output (events arrive over 1 second):
+# event: progress
+# data: {"progressToken":"...","progress":0.2,"level":"info","data":"Progress step 1 of 5"}
+#
+# event: progress
+# data: {"progressToken":"...","progress":0.4,"level":"info","data":"Progress step 2 of 5"}
+#
+# event: progress
+# data: {"progressToken":"...","progress":0.6,"level":"info","data":"Progress step 3 of 5"}
+#
+# event: progress
+# data: {"progressToken":"...","progress":0.8,"level":"info","data":"Progress step 4 of 5"}
+#
+# event: progress
+# data: {"progressToken":"...","progress":1,"level":"info","data":"Progress step 5 of 5"}
+#
+# event: data
+# data: {"jsonrpc":"2.0","id":"req-2","result":{"content":[{"type":"text","text":"Progress demonstration completed with 5 steps"}]}}
 ```
 
-### Access Resources
+## 🧠 State Management Model
 
-```bash
-# Get mathematical constants
-curl -X POST http://localhost:1071/mcp \
-     -H 'Content-Type: application/json' \
-     -d '[{
-       "jsonrpc": "2.0",
-       "id": 4,
-       "method": "resources/read",
-       "params": {
-         "uri": "calculator://constants"
-       }
-     }]'
+**This server is explicitly stateless.** All state required to process a request must be contained within the request itself. The server does not and cannot retain information between requests.
 
-# Response:
-{"jsonrpc":"2.0","id":4,"result":{"contents":[{"uri":"calculator://constants","mimeType":"application/json","text":"{\"pi\":3.141592653589793,\"e\":2.718281828459045}"}]}}
-```
+#### What IS NOT Stored Server-Side
+-   ❌ **Calculation History**: The server has no memory of past calculations.
+-   ❌ **User Sessions**: There is no concept of a user session.
+-   ❌ **Request Correlation**: The server does not link multiple requests together.
 
-### Use Prompts
+#### What IS Available (Per-Process or Per-Request)
+-   ✅ **Process Uptime**: Accessible via the `calculator://stats` resource. This is global to the Node.js process, not a specific request.
+-   ✅ **Static Resources**: The `calculator://constants` and `formulas://library` resources are read from static definitions on each call.
+-   ✅ **Request Context**: The server has access to the current HTTP request headers and body, but only for the duration of that single request.
 
-```bash
-curl -X POST http://localhost:1071/mcp \
-     -H 'Content-Type: application/json' \
-     -d '[{
-       "jsonrpc": "2.0",
-       "id": 5,
-       "method": "prompts/get",
-       "params": {
-         "name": "explain-calculation",
-         "arguments": {
-           "expression": "12 × 8",
-           "level": "elementary"
-         }
-       }
-     }]'
-```
+## 🛡️ Security Model
 
-### Key Difference from Stateful Build
+A stateless architecture changes the security model by eliminating session-based vulnerabilities.
 
-**No sticky conversations** - every call must ship full context. There's no session to maintain, no history to reference, and no state to resume. This enables infinite horizontal scaling but requires clients to manage their own state.
-
-## 🔧 Transport Hardening
-
-### True Statelessness Implementation
-
-- `sessionIdGenerator: () => undefined` in transport constructor
-- No server-side transport map or session storage
-- No `Mcp-Session-Id` header processing
-- Each request processed completely independently
-
-### No Resumability by Design
-
-- No EventStore hooks or event persistence
-- `Last-Event-Id` header is ignored
-- No `id:` fields in SSE messages
-- Stream interruptions require complete request retry
-
-### Single-Endpoint Architecture
-
-- `POST /mcp` - Accept JSON-RPC batch & stream responses
-- `GET /mcp` - Optional listen-only channel for unsolicited notifications
-- No session-specific endpoints or routing
+-   **No Session Hijacking**: Since there are no sessions, they cannot be hijacked.
+-   **Per-Request Authentication**: Security is handled on a per-request basis. In a production scenario, you would add middleware to validate an `Authorization` header containing a stateless token (e.g., JWT) on every call.
+-   **Reduced Attack Surface**: The absence of server-side state storage reduces the potential for state-based attacks like data corruption or information leakage between sessions.
+-   **Input Validation**: All parameters are rigorously validated on every request using Zod schemas, preventing malformed data from propagating.
 
 ## 🧪 Testing
 
+This project includes a test suite verifying its stateless behavior.
+
 ```bash
-# Run all tests
+# Run all available tests
 npm test
 
-# Unit tests - verify stateless behavior
-npm run test:unit
+# Run tests with a code coverage report
+npm run test:coverage
 
-# Integration tests - network drop simulation  
-npm run test:integration
-
-# Load testing - concurrent requests
-npm run test:load
-
-# Manifest compliance
-npm run test:manifest
+# Run tests in watch mode for development
+npm run test:watch
 ```
 
-### Key Test Scenarios
+## Production-Ready Features
 
-1. **Stateless Verification**: Confirm no `Mcp-Session-Id` headers in responses
-2. **Network Drop Behavior**: Simulate connection loss - expect full retry, not resume
-3. **Load Balancer Compatibility**: Concurrent requests to different server instances
-4. **Performance Testing**: Load testing with 10,000+ requests
-5. **Memory Isolation**: Verify no state leakage between requests
+This server includes several features designed for observability in a production environment.
 
-## 📝 State Management
+### Structured Logging
 
-**Critical Design Principle**: All state lives outside the server process.
+All console output is structured JSON, including a unique `requestId` to correlate all logs associated with a single HTTP request. This is essential for debugging in a distributed, serverless environment.
 
-### What's NOT Stored Server-Side
-- ❌ Calculation history
-- ❌ User sessions or preferences  
-- ❌ Request correlation data
-- ❌ Progress state across requests
+**Example Log Entry:**
+```json
+{"timestamp":"2023-10-27T18:30:00.000Z","level":"info","message":"Created fresh MCP server instance","context":{"requestId":"..."}}
+```
 
-### What IS Available
-- ✅ Process uptime and health status
-- ✅ Static resources (constants, formulas)
-- ✅ Current request context only
-- ✅ Configuration and environment data
+### Monitoring & Health Checks
 
-This stateless design enables true serverless deployment where instances can start/stop without coordination.
+The server exposes several endpoints for monitoring and health checks:
 
-## 🔒 Security Considerations
+| Endpoint | Method | Description |
+|:---|:---|:---|
+| `/health` | `GET` | A simple health check, returns status `healthy`. |
+| `/health/detailed` | `GET` | Provides detailed system, application, and characteristic info. |
+| `/metrics` | `GET` | Exposes basic metrics in a Prometheus-compatible format. |
 
-- **JWT Authentication**: Stateless token validation per request
-- **API Key Validation**: Per-request authentication without session storage
-- **Reduced Attack Surface**: No session storage means fewer vulnerable state vectors
-- **Input Validation**: Zod schemas validate all parameters independently
-- **No State Poisoning**: Impossible to corrupt server state between requests
-
-## 📊 Production Features
-
-### Health Checks
-
+**Example Health Check:**
 ```bash
-curl http://localhost:1071/health
-
-# Response:
+curl -s http://localhost:1071/health | jq
 {
   "status": "healthy",
-  "timestamp": "2024-01-15T10:30:00Z", 
-  "uptime": 3600,
-  "version": "1.0.0",
-  "transport": "streamable-http-stateless"
+  "timestamp": "2023-10-27T18:35:00.000Z",
+  "pattern": "stateless",
+  "uptime": 300.123,
+  "memory": { "rss": 50123456, ... },
+  "version": "1.0.0"
 }
 ```
 
-### Serverless Deployment Examples
+## 📚 Project Resources
 
-#### AWS Lambda
-
-```javascript
-export const handler = async (event) => {
-  // Each Lambda invocation is naturally stateless
-  const mpcResponse = await processStatelessRequest(event.body);
-  return {
-    statusCode: 200,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*'
-    },
-    body: mpcResponse
-  };
-};
-```
-
-#### Cloudflare Workers  
-
-```javascript
-export default {
-  async fetch(request) {
-    // Perfect for edge deployment
-    const body = await request.json();
-    const response = await handleStatelessMCP(body);
-    
-    return new Response(response, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache'
-      }
-    });
-  }
-};
-```
-
-### Scaling Characteristics
-
-- **Horizontal scaling**: ♾️ Infinite (no session affinity required)
-- **Cold start time**: Optimized for < 100ms startup
-- **Memory footprint**: < 128MB per instance
-- **Request size limit**: 1MB maximum payload
-- **Load balancer agnostic**: Any algorithm works (round-robin, least-connections, etc.)
-
-## 📖 Resources
-
-- [MCP Specification](https://spec.modelcontextprotocol.io)
-- [Model Context Protocol Documentation](https://modelcontextprotocol.io)
-- [Streamable HTTP Transport](https://spec.modelcontextprotocol.io/specification/basic/transports/#streamable-http)
-- [Serverless Architecture Best Practices](https://12factor.net/)
+*   [MCP Specification](https://spec.modelcontextprotocol.io)
+*   [Model Context Protocol Documentation](https://modelcontextprotocol.io)
+*   [Streamable HTTP Transport Documentation](https://spec.modelcontextprotocol.io/specification/basic/transports/#streamable-http)
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
 
 ---
 
 <p align="center">
-  ✅ <strong>Stateless Reference Implementation - MCP Learning Edition</strong><br/>
-  Perfect horizontal scaling with zero server-side state dependencies
+  ✅ <strong>Stateless Reference Implementation - MCP Learning Edition</strong>
 </p>
