@@ -102,6 +102,9 @@ cd calculator-learning-demo-stateless
 # Install dependencies
 npm install
 
+# Install TypeScript declarations (if needed)
+npm install --save-dev @types/express @types/cors
+
 # Build the project
 npm run build
 ```
