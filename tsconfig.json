@@ -22,7 +22,7 @@
     "module": "ES2022",
     "target": "ES2022",
     "lib": ["ES2022"],
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
@@ -63,10 +63,11 @@
   "exclude": [
     "node_modules",
     "dist",
-    "build",
+    "build", 
     "coverage",
     "**/*.spec.ts",
-    "**/*.test.ts"
+    "**/*.test.ts",
+    "src/tests"
   ],
   "ts-node": {
     "esm": true,
