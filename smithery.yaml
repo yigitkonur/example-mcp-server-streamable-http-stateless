@@ -1,18 +1,8 @@
-configSchema:
-  type: object
-  properties: {}
-  required: []
+# Smithery configuration file: https://smithery.ai/docs/build/project-config
 
 startCommand:
-  type: http             # transport is still HTTP
-  stateless: true        # key that tells Smithery to reuse pool
-  healthPath: /health    # Smithery will poll this
-  commandFunction: |
-    () => ({
-      command: 'node',
-      args: [
-        'dist/stateless-production-server.js',
-        '--port', '8080'
-      ],
-      env: { PORT: 8080 }
-    })
+  type: http
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP.
+    type: object
+  exampleConfig: {}
