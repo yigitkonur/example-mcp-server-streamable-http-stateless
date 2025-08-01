@@ -66,6 +66,14 @@ function createMCPServer(): McpServer {
     }
   );
 
+  // TOOL: Sample (Optional - Educational)
+  if (process.env['SAMPLE_TOOL_NAME']) {
+    server.tool(process.env['SAMPLE_TOOL_NAME'], 'Sample tool for educational purposes', {}, 
+      async (): Promise<CallToolResult> => ({
+        content: [{ type: 'text', text: `Sample tool: ${process.env['SAMPLE_TOOL_NAME']}` }]
+      }));
+  }
+
   // TOOL: Calculator (Core)
   server.tool(
     'calculate', 

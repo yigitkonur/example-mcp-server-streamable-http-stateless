@@ -1,6 +1,9 @@
 configSchema:
   type: object
-  properties: {}
+  properties:
+    SAMPLE_TOOL_NAME:
+      type: string
+      description: "Optional sample tool name for educational purposes"
   required: []
 
 startCommand:
@@ -14,5 +17,8 @@ startCommand:
         'dist/stateless-production-server.js',
         '--port', '8080'
       ],
-      env: { PORT: 8080 }
+      env: { 
+        PORT: 8080,
+        SAMPLE_TOOL_NAME: cfg.SAMPLE_TOOL_NAME 
+      }
     })
