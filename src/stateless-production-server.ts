@@ -68,9 +68,12 @@ function createMCPServer(): McpServer {
 
   // TOOL: Sample (Optional - Educational)
   if (process.env['SAMPLE_TOOL_NAME']) {
-    server.tool(process.env['SAMPLE_TOOL_NAME'], 'Sample tool for educational purposes', {}, 
-      async (): Promise<CallToolResult> => ({
-        content: [{ type: 'text', text: `Sample tool: ${process.env['SAMPLE_TOOL_NAME']}` }]
+    const sampleToolName = process.env['SAMPLE_TOOL_NAME'];
+    server.tool(sampleToolName, 'Educational echo tool for learning MCP concepts', {
+      message: z.string().describe('Message to echo back')
+    }, 
+      async ({ message }): Promise<CallToolResult> => ({
+        content: [{ type: 'text', text: `Sample tool "${sampleToolName}" received: ${message}` }]
       }));
   }
 

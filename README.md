@@ -215,6 +215,24 @@ A stateless architecture changes the security model by eliminating session-based
 -   **Reduced Attack Surface**: The absence of server-side state storage reduces the potential for state-based attacks like data corruption or information leakage between sessions.
 -   **Input Validation**: All parameters are rigorously validated on every request using Zod schemas, preventing malformed data from propagating.
 
+## 🎓 Educational Tool (Optional)
+
+For learning purposes, the server supports an optional educational echo tool via the `SAMPLE_TOOL_NAME` environment variable:
+
+```bash
+# Start server with educational tool
+SAMPLE_TOOL_NAME=educational_echo npm run start:stateless
+
+# Test the educational tool
+curl -X POST http://localhost:1071/mcp \
+     -H 'Content-Type: application/json' \
+     -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"educational_echo","arguments":{"message":"Hello MCP!"}},"id":1}'
+
+# Response: Sample tool "educational_echo" received: Hello MCP!
+```
+
+When set, the educational tool appears first in the tools list. When unset, only standard calculator tools are available.
+
 ## 🧪 Testing
 
 This project includes a test suite verifying its stateless behavior.
