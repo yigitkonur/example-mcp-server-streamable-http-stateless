@@ -300,14 +300,15 @@ npx @modelcontextprotocol/inspector --cli http://localhost:1071/mcp
 
 The server is configured using environment variables, making it perfect for containerized deployments.
 
-| Variable            | Description                                                       | Default           |
-| :------------------ | :---------------------------------------------------------------- | :---------------- |
-| `PORT`              | The port for the HTTP server to listen on.                        | `1071`            |
-| `LOG_LEVEL`         | Logging verbosity (`debug`, `info`, `warn`, `error`).             | `info`            |
-| `CORS_ORIGIN`       | Allowed origin for CORS. **Must be restricted in production.**    | `*`               |
-| `RATE_LIMIT_MAX`    | Max requests per window per IP.                                   | `1000`            |
-| `RATE_LIMIT_WINDOW` | Rate limit window in milliseconds.                                | `900000` (15 min) |
-| `NODE_ENV`          | Sets the environment. Use `production` for Express optimizations. | `development`     |
+| Variable            | Description                                                                                                                                                                                                                                                                             | Default           |
+| :------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------- |
+| `PORT`              | The port for the HTTP server to listen on.                                                                                                                                                                                                                                              | `1071`            |
+| `LOG_LEVEL`         | Logging verbosity (`debug`, `info`, `warn`, `error`).                                                                                                                                                                                                                                   | `info`            |
+| `CORS_ORIGIN`       | Allowed origin for CORS. **Must be restricted in production.**                                                                                                                                                                                                                          | `*`               |
+| `RATE_LIMIT_MAX`    | Max requests per window per IP.                                                                                                                                                                                                                                                         | `1000`            |
+| `RATE_LIMIT_WINDOW` | Rate limit window in milliseconds.                                                                                                                                                                                                                                                      | `900000` (15 min) |
+| `NODE_ENV`          | Sets the environment. Use `production` for Express optimizations.                                                                                                                                                                                                                       | `development`     |
+| `SAMPLE_TOOL_NAME`  | **(Educational)** Demonstrates dynamic tool registration via environment variables. When set, adds a simple echo tool with the specified name that takes a `value` parameter and returns `test string print: {value}`. This pattern shows how MCP servers can be configured at runtime. | None              |
 
 ### Deployment
 

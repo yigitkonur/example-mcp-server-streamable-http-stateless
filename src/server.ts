@@ -285,11 +285,11 @@ function createMCPServer(): McpServer {
       sampleToolName, // Tool name from environment variable
       'Educational echo tool for learning MCP concepts', // Human-readable description
       schemas.sampleTool.shape, // Zod schema for parameter validation
-      async ({ message }): Promise<CallToolResult> => ({
+      async ({ value }): Promise<CallToolResult> => ({
         content: [
           {
             type: 'text',
-            text: `Sample tool "${sampleToolName}" received: ${message}`,
+            text: `test string print: ${value}`,
           },
         ],
       }),

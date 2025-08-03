@@ -47,7 +47,7 @@ export const schemas = {
    * Demonstrates dynamic tool registration based on configuration.
    */
   sampleTool: z.object({
-    message: z.string().describe('Message to echo back'),
+    value: z.string().describe('Value to be prefixed and returned'),
   }),
 
   /**
