@@ -74,8 +74,11 @@ npm run dev        # Development mode with hot-reload (uses tsx)
 npm run build      # Compile TypeScript to JavaScript in `dist/`
 npm run start      # Run the production-ready compiled server
 npm run lint       # Run code quality checks with ESLint
-npm run test       # Run the automated test suite
-npm run ci         # Run the full CI pipeline (lint + build + test)
+npm run lint:ci    # Run lint with zero warnings enforced
+npm run typecheck  # TypeScript type checking
+npm run format     # Format code with Prettier
+npm run pipeline   # Full CI pipeline (clean + typecheck + lint + format + build)
+npm run all        # Complete pipeline + smoke test
 ```
 
 ## 📐 Architecture Overview
