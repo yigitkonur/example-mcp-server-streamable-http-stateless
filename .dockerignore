@@ -1,0 +1,37 @@
+# Ignore dependencies, as they are installed within the container
+node_modules
+
+# Ignore build output, as it is generated within the container
+dist
+
+# Ignore local environment files and secrets
+.env*
+
+# Ignore log files
+*.log
+npm-debug.log*
+
+# Ignore Docker and git files
+.git
+.gitignore
+Dockerfile
+docker-compose*.yml
+
+# Ignore test files and coverage reports
+coverage
+.nyc_output
+
+# Ignore IDE specific files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Ignore OS specific files
+.DS_Store
+Thumbs.db
+
+# Ignore temporary files
+tmp
+temp
