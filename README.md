@@ -1,6 +1,6 @@
 <div align="center">
 
-**[STDIO](https://github.com/yigitkonur/example-mcp-server-stdio) | [Stateful HTTP](https://github.com/yigitkonur/example-mcp-server-streamable-http) | [Stateless HTTP](https://github.com/yigitkonur/example-mcp-server-streamable-http-stateless) | [Legacy SSE](https://github.com/yigitkonur/example-mcp-server-sse)**
+**[STDIO](https://github.com/yigitkonur/example-mcp-server-stdio) | [Stateful HTTP](https://github.com/yigitkonur/example-mcp-server-streamable-http) | [Stateless HTTP](https://github.com/yigitkonur/example-mcp-server-streamable-http-stateless) | [SSE](https://github.com/yigitkonur/example-mcp-server-sse)**
 
 </div>
 
@@ -17,7 +17,7 @@
 [![SDK](https://img.shields.io/badge/SDK-Production%20Ready-green)](https://github.com/modelcontextprotocol/typescript-sdk)
 [![Architecture](https://img.shields.io/badge/Architecture-True%20Stateless-gold)]()
 
-*Learn by building a world-class MCP server designed for infinite scalability, security, and maintainability.*
+_Learn by building a world-class MCP server designed for infinite scalability, security, and maintainability._
 
 </div>
 
@@ -37,18 +37,18 @@ Through a fully-functional calculator server, this project will teach you:
 
 A stateless architecture is the optimal choice for environments where scalability, resilience, and operational simplicity are paramount.
 
-*   **Serverless Platforms:** Perfect for deployment to AWS Lambda, Vercel, Google Cloud Functions, or any "Function-as-a-Service" platform.
-*   **Auto-Scaling Environments:** Ideal for container orchestrators like Kubernetes, where a Horizontal Pod Autoscaler can add or remove server replicas based on traffic, with no need for session affinity ("sticky sessions").
-*   **High-Traffic APIs:** When you need to serve a large number of independent requests and cannot be constrained by the memory or state of a single server.
-*   **Simplified Operations:** Eliminates the need for a shared state store (like Redis), reducing infrastructure complexity and maintenance overhead.
+- **Serverless Platforms:** Perfect for deployment to AWS Lambda, Vercel, Google Cloud Functions, or any "Function-as-a-Service" platform.
+- **Auto-Scaling Environments:** Ideal for container orchestrators like Kubernetes, where a Horizontal Pod Autoscaler can add or remove server replicas based on traffic, with no need for session affinity ("sticky sessions").
+- **High-Traffic APIs:** When you need to serve a large number of independent requests and cannot be constrained by the memory or state of a single server.
+- **Simplified Operations:** Eliminates the need for a shared state store (like Redis), reducing infrastructure complexity and maintenance overhead.
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-*   Node.js ≥ 20.0.0
-*   npm or yarn
-*   Docker (for containerized deployment)
+- Node.js ≥ 20.0.0
+- npm or yarn
+- Docker (for containerized deployment)
 
 ### Installation & Running
 
@@ -127,7 +127,9 @@ This diagram shows how a single request is processed in our stateless model.
 
 #### Code Structure
 
-This diagram shows how the source code is organized for maximum clarity and maintainability.```
+This diagram shows how the source code is organized for maximum clarity and maintainability.
+
+```
 src/
 ├── types.ts      # Data Contracts (Schemas, Constants, Type Interfaces)
 |                 #  - The "what" of our application.
@@ -147,6 +149,7 @@ This section highlights the most important, production-ready patterns demonstrat
 **The Principle:** To guarantee statelessness and prevent memory leaks, we follow a strict **create-use-destroy** lifecycle for server and transport objects within the scope of a single HTTP request handler.
 
 **The Implementation:**
+
 ```typescript
 // src/server.ts
 const handleMCPRequest = async (req: Request, res: Response) => {
@@ -184,10 +187,7 @@ const handleMCPRequest = async (req: Request, res: Response) => {
     // In the 'calculate' tool for the 'divide' operation:
     if (b === 0) {
       // Throw a structured error that the client can parse.
-      throw new McpError(
-        ErrorCode.InvalidParams, 
-        'Division by zero is not allowed.'
-      );
+      throw new McpError(ErrorCode.InvalidParams, 'Division by zero is not allowed.');
     }
     ```
 
@@ -217,16 +217,18 @@ const handleMCPRequest = async (req: Request, res: Response) => {
 **The Principle:** A clean architecture separates data contracts (the "what") from implementation logic (the "how"). This makes the code easier to maintain, test, and reason about.
 
 **The Implementation:**
-*   **`src/types.ts`**: This file contains only data definitions. It has no runtime logic. It defines all Zod schemas for input validation, shared constants, and TypeScript interfaces. It is the stable foundation of the application.
-*   **`src/server.ts`**: This file contains all runtime logic. It imports the data contracts from `types.ts` and uses them to implement the server's behavior, including the Express app, middleware, tool handlers, and startup sequence.
+
+- **`src/types.ts`**: This file contains only data definitions. It has no runtime logic. It defines all Zod schemas for input validation, shared constants, and TypeScript interfaces. It is the stable foundation of the application.
+- **`src/server.ts`**: This file contains all runtime logic. It imports the data contracts from `types.ts` and uses them to implement the server's behavior, including the Express app, middleware, tool handlers, and startup sequence.
 
 ### Pattern 4: Production-Ready Observability
 
 **The Principle:** A production service must be transparent. This server includes built-in endpoints for health checks and metrics, allowing it to be easily integrated into modern monitoring and orchestration systems.
 
 **The Implementation:**
-*   **`/health`:** A simple endpoint that returns a `200 OK` status with basic uptime and memory information. Perfect for load balancers and container readiness probes.
-*   **`/metrics`:** Exposes key performance indicators (KPIs) like request duration and tool execution times in a **Prometheus-compatible format**, ready to be scraped by monitoring systems like Prometheus or Grafana.
+
+- **`/health`:** A simple endpoint that returns a `200 OK` status with basic uptime and memory information. Perfect for load balancers and container readiness probes.
+- **`/metrics`:** Exposes key performance indicators (KPIs) like request duration and tool execution times in a **Prometheus-compatible format**, ready to be scraped by monitoring systems like Prometheus or Grafana.
 
 ## 🧪 Testing & Validation
 
@@ -247,6 +249,7 @@ curl http://localhost:1071/metrics
 Send a direct `curl` request to test a tool's functionality.
 
 #### Testing a Success Case
+
 ```bash
 # Test the 'calculate' tool
 curl -X POST \
@@ -257,7 +260,9 @@ curl -X POST \
 ```
 
 #### Testing an Error Case
+
 This command intentionally triggers the `InvalidParams` error to demonstrate the server's resilient error handling.
+
 ```bash
 # Test division by zero
 curl -X POST \
@@ -280,6 +285,7 @@ curl -X POST \
 ### Interactive Testing with MCP Inspector
 
 Use the official inspector for a rich, interactive testing experience.
+
 ```bash
 # The inspector connects to the server's endpoint via HTTP.
 npx @modelcontextprotocol/inspector --cli http://localhost:1071/mcp
@@ -291,18 +297,18 @@ npx @modelcontextprotocol/inspector --cli http://localhost:1071/mcp
 
 The server is configured using environment variables, making it perfect for containerized deployments.
 
-| Variable | Description | Default |
-| :--- |:--- |:--- |
-| `PORT` | The port for the HTTP server to listen on. | `1071` |
-| `LOG_LEVEL` | Logging verbosity (`debug`, `info`, `warn`, `error`). | `info` |
-| `CORS_ORIGIN` | Allowed origin for CORS. **Must be restricted in production.** | `*` |
-| `RATE_LIMIT_MAX` | Max requests per window per IP. | `1000` |
-| `RATE_LIMIT_WINDOW`| Rate limit window in milliseconds. | `900000` (15 min) |
-| `NODE_ENV` | Sets the environment. Use `production` for Express optimizations. | `development` |
+| Variable            | Description                                                       | Default           |
+| :------------------ | :---------------------------------------------------------------- | :---------------- |
+| `PORT`              | The port for the HTTP server to listen on.                        | `1071`            |
+| `LOG_LEVEL`         | Logging verbosity (`debug`, `info`, `warn`, `error`).             | `info`            |
+| `CORS_ORIGIN`       | Allowed origin for CORS. **Must be restricted in production.**    | `*`               |
+| `RATE_LIMIT_MAX`    | Max requests per window per IP.                                   | `1000`            |
+| `RATE_LIMIT_WINDOW` | Rate limit window in milliseconds.                                | `900000` (15 min) |
+| `NODE_ENV`          | Sets the environment. Use `production` for Express optimizations. | `development`     |
 
 ### Deployment
 
 This server is designed from the ground up for modern, scalable deployment platforms. The included multi-stage `Dockerfile` and `docker-compose.yml` provide a secure and efficient container.
 
-*   **Serverless:** The `handleMCPRequest` function can be exported directly as a serverless function handler for platforms like Vercel or AWS Lambda.
-*   **Kubernetes:** The Docker image is ready to be deployed with a Horizontal Pod Autoscaler (HPA), allowing the cluster to automatically scale replicas up and down based on CPU or request load.
+- **Serverless:** The `handleMCPRequest` function can be exported directly as a serverless function handler for platforms like Vercel or AWS Lambda.
+- **Kubernetes:** The Docker image is ready to be deployed with a Horizontal Pod Autoscaler (HPA), allowing the cluster to automatically scale replicas up and down based on CPU or request load.

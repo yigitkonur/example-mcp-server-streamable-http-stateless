@@ -13,7 +13,7 @@ services:
     ports:
       # Maps port 1071 on your host machine to port 1071 in the container.
       # Format is HOST:CONTAINER
-      - "1071:1071"
+      - '1071:1071'
     environment:
       # Pass environment variables to your application.
       # Your code reads these to configure itself.
@@ -23,7 +23,7 @@ services:
       # You can add your optional tool name here if you want
       # - SAMPLE_TOOL_NAME=my-echo-tool
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:1071/health"]
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:1071/health']
       interval: 30s
       timeout: 10s
       retries: 3

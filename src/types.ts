@@ -4,7 +4,7 @@
  * This file contains all Zod schemas, constants, and TypeScript type definitions.
  * It is designed to be free of runtime logic, making it a stable dependency
  * for the rest of the application.
- * 
+ *
  * EDUCATIONAL PURPOSE: Separating data contracts from business logic promotes
  * maintainability, testability, and reusability. This file serves as the
  * single source of truth for all data structures used throughout the application.
@@ -175,12 +175,12 @@ export const CONSTANTS = {
  * In a truly stateless environment, metrics would be sent to an external
  * system (like Prometheus) rather than accumulated in memory.
  */
-export interface Metrics {
+export type Metrics = {
   /** Array of request duration measurements in milliseconds */
   requestDuration: number[];
   /** Map of tool names to their execution time measurements */
   toolExecutionTime: Map<string, number[]>;
-}
+};
 
 /**
  * Type utility for extracting the shape of our schemas.
@@ -190,7 +190,7 @@ export interface Metrics {
  * USAGE EXAMPLE:
  * type CalculateInput = z.infer<typeof schemas.calculate>;
  */
-export type SchemaInput<T extends keyof typeof schemas> = z.infer<typeof schemas[T]>;
+export type SchemaInput<T extends keyof typeof schemas> = z.infer<(typeof schemas)[T]>;
 
 /**
  * Configuration interface for the server.
@@ -199,7 +199,7 @@ export type SchemaInput<T extends keyof typeof schemas> = z.infer<typeof schemas
  * BEST PRACTICE: Explicitly typing configuration prevents runtime errors
  * and makes the expected environment variables self-documenting.
  */
-export interface ServerConfig {
+export type ServerConfig = {
   /** Port number for the HTTP server */
   port: number;
   /** CORS origin policy (use specific origins in production) */
@@ -212,7 +212,7 @@ export interface ServerConfig {
   rateLimitMax: number;
   /** Rate limiting time window in milliseconds */
   rateLimitWindow: number;
-}
+};
 
 /**
  * Type definition for structured log entries.
@@ -222,7 +222,7 @@ export interface ServerConfig {
  * This type ensures all log entries have the required fields for proper
  * aggregation and analysis in log management systems.
  */
-export interface LogEntry {
+export type LogEntry = {
   /** ISO 8601 timestamp of the log entry */
   timestamp: string;
   /** Log level (debug, info, warn, error) */
@@ -233,4 +233,4 @@ export interface LogEntry {
   context: Record<string, unknown>;
   /** Additional structured data */
   [key: string]: unknown;
-}
+};
