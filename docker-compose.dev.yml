@@ -1,0 +1,20 @@
+# docker-compose.dev.yml
+version: '3.8'
+
+services:
+  mcp-server:
+    # For development, we want to run the server with a tool that watches
+    # for file changes and re-compiles/re-starts on the fly.
+    # Override the CMD from Dockerfile to use npm run dev
+    command: npm run dev
+    volumes:
+      # Mount the entire source directory for hot-reloading
+      # This allows you to edit files locally and see changes immediately
+      - ./src:/usr/src/app/src
+      - ./tsconfig.json:/usr/src/app/tsconfig.json
+      # Prevent node_modules from being overwritten by the host
+      - /usr/src/app/node_modules
+    environment:
+      # Additional dev environment variables
+      - NODE_ENV=development
+      - LOG_LEVEL=debug

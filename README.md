@@ -1,291 +1,308 @@
-# Calculator Learning Demo - Streamable HTTP (Stateless) Transport
-
 <div align="center">
 
-[![MCP Version](https://img.shields.io/badge/MCP-1.0.0-blue)](https://modelcontextprotocol.io)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org/)
-[![Architecture](https://img.shields.io/badge/Architecture-Stateless-green)](https://spec.modelcontextprotocol.io/specification/basic/transports/#streamable-http)
-[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+**[STDIO](https://github.com/yigitkonur/example-mcp-server-stdio) | [Stateful HTTP](https://github.com/yigitkonur/example-mcp-server-streamable-http) | [Stateless HTTP](https://github.com/yigitkonur/example-mcp-server-streamable-http-stateless) | [Legacy SSE](https://github.com/yigitkonur/example-mcp-server-sse)**
 
 </div>
 
-## 🎯 Overview
+---
 
-This repository provides a reference implementation of an **MCP calculator server using Streamable HTTP transport in a truly stateless mode**. It is architected for maximum scalability and is optimized for serverless and edge computing environments.
+# 🎓 MCP Stateless HTTP Streamable Server - Educational Reference
 
-The core design principle is that the server holds **zero state** between requests. Every incoming request is atomic and self-contained. This design choice enables perfect horizontal scaling and eliminates an entire class of state-related complexities and vulnerabilities.
+<div align="center">
 
-### Key Characteristics
+**A Production-Ready Model Context Protocol Server Teaching Stateless Architecture and Scalability Best Practices**
 
--   **Zero State Persistence**: The server retains no memory of past requests. No sessions, no history.
--   **Per-Request Lifecycle**: A new MCP server instance is created for every HTTP request and is destroyed immediately after the response stream closes.
--   **Infinite Scalability**: Since no state is shared, any server instance in a cluster can handle any request, making load balancing trivial (e.g., round-robin).
--   **No Resumability**: By design, if a connection is lost, the client must initiate a completely new request. There is no session to resume.
--   **Ideal Use Case**: Edge functions (Vercel, Cloudflare), serverless computing (AWS Lambda), and any application where horizontal scalability is paramount.
+[![MCP Version](https://img.shields.io/badge/MCP-1.0.0-blue)](https://spec.modelcontextprotocol.io)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org/)
+[![SDK](https://img.shields.io/badge/SDK-Production%20Ready-green)](https://github.com/modelcontextprotocol/typescript-sdk)
+[![Architecture](https://img.shields.io/badge/Architecture-True%20Stateless-gold)]()
 
-## 📊 Transport Comparison
+*Learn by building a world-class MCP server designed for infinite scalability, security, and maintainability.*
 
-This table compares the four primary MCP transport mechanisms. The implementation in **this repository is highlighted**.
+</div>
 
-| Dimension | STDIO | SSE (Legacy) | Streamable HTTP (Stateful) | **Streamable HTTP (Stateless)** |
-|:-----------|:-----------|:---------|:---------------------|:-------------------------------|
-| **Transport Layer** | Local Pipes (`stdin`/`stdout`) | 2 × HTTP endpoints (`GET`+`POST`) | Single HTTP endpoint `/mcp` | ✅ **Single HTTP endpoint `/mcp`** |
-| **Bidirectional Stream** | ✅ Yes (full duplex) | ⚠️ Server→Client only | ✅ Yes (server push + client stream) | ✅ **Yes (within each request)** |
-| **State Management** | Ephemeral (Process Memory) | Ephemeral (Session Memory) | Persistent (Session State) | ❌ **None (Stateless)** |
-| **Resumability** | ❌ None | ❌ None | ✅ Yes (`Last-Event-Id`) | ❌ **None (by design)** |
-| **Scalability** | ⚠️ Single Process | ✅ Multi-Client | ✅ Horizontal (Sticky Sessions) | ♾️ **Infinite (Serverless)** |
-| **Security** | 🔒 Process Isolation | 🌐 Network Exposed | 🌐 Network Exposed | 🌐 **Network Exposed** |
-| **Ideal Use Case** | CLI Tools, IDE Plugins | Legacy Web Apps | Enterprise APIs, Workflows | ✅ **Serverless, Edge Functions** |
+## 🎯 Project Goal & Core Concepts
 
-## 📐 Architecture and Flow
+This repository is a **deeply educational reference implementation** that demonstrates how to build a production-quality MCP server using a **truly stateless architecture**. This design is the gold standard for modern, cloud-native services.
 
-The stateless transport treats every request as a new, independent interaction. A fresh MCP server instance is created for each incoming request and destroyed once the response is complete. This eliminates the need for session management and allows any server in a cluster to handle any request.
+Through a fully-functional calculator server, this project will teach you:
 
-```mermaid
-sequenceDiagram
-    participant Client
-    participant Load Balancer
-    participant Server A
-    participant Server B
+1.  **🏗️ Clean Architecture & Design**: Master the **"fresh instance per request"** pattern for infinite scaling and learn to structure your code with a clean separation of concerns (`types.ts` for data contracts, `server.ts` for logic).
+2.  **⚙️ Protocol & Transport Mastery**: Correctly implement the `StreamableHTTPServerTransport` in its **stateless mode**, delegating all low-level protocol validation to the SDK.
+3.  **🔒 Production-Grade Security**: Implement non-negotiable security layers, including **rate limiting**, request size validation, **DNS rebinding protection**, and strict CORS policies.
+4.  **⚡ Resilient Error Handling**: Implement a "fail-fast" and "no-leaks" error policy using specific, protocol-compliant `McpError` types for predictable and secure failure modes.
+5.  **📈 Production Observability**: Build a server that is transparent and monitorable from day one with structured logging, health check endpoints, and Prometheus-compatible metrics.
 
-    Note over Client,Server B: No Session Handshake Required
+## 🤔 When to Use This Architecture
 
-    Client->>Load Balancer: POST /mcp (Request 1)
-    Load Balancer->>Server A: Route to any available server
-    Server A-->>Load Balancer: Process and respond
-    Load Balancer-->>Client: 200 OK with response stream
+A stateless architecture is the optimal choice for environments where scalability, resilience, and operational simplicity are paramount.
 
-    Note over Client,Server B: Next request can go to a different server
+*   **Serverless Platforms:** Perfect for deployment to AWS Lambda, Vercel, Google Cloud Functions, or any "Function-as-a-Service" platform.
+*   **Auto-Scaling Environments:** Ideal for container orchestrators like Kubernetes, where a Horizontal Pod Autoscaler can add or remove server replicas based on traffic, with no need for session affinity ("sticky sessions").
+*   **High-Traffic APIs:** When you need to serve a large number of independent requests and cannot be constrained by the memory or state of a single server.
+*   **Simplified Operations:** Eliminates the need for a shared state store (like Redis), reducing infrastructure complexity and maintenance overhead.
 
-    Client->>Load Balancer: POST /mcp (Request 2)
-    Load Balancer->>Server B: Route to any available server
-    Server B-->>Load Balancer: Process and respond independently
-    Load Balancer-->>Client: 200 OK with response stream
-```
-
-The core of this architecture is the `handleMCPRequest` function in `stateless-production-server.ts`, which performs the following for every call:
-1.  Creates a new `McpServer` instance using the `createMCPServer` factory.
-2.  Creates a new `StreamableHTTPServerTransport` configured for stateless operation (`sessionIdGenerator: undefined`).
-3.  Connects the server and transport.
-4.  Processes the HTTP request and streams the response.
-5.  Listens for the `response.on('close', ...)` event to tear down and garbage-collect both the server and transport instances.
-
-## ✨ Feature Compliance
-
-This server implements a minimal, stateless version of the MCP Latest Standard. Features requiring state are explicitly not implemented.
-
-| Name | Status | Implementation |
-|:------|:--------|:----------------|
-| `calculate` | **Core ✅** | Basic arithmetic with optional streaming progress. |
-| `batch_calculate` | **Not Implemented** | Returns error `-32601`, as this is not part of the stateless demo. |
-| `advanced_calculate`| **Not Implemented** | Returns error `-32601`, not included in this build. |
-| `demo_progress` | **Extended ✅** | Emits 5 SSE `progress` events, then the final result. |
-| `explain-calculation`| **Core ✅** | Returns a stateless Markdown explanation. |
-| `generate-problems` | **Core ✅** | Returns stateless Markdown practice problems. |
-| `calculator-tutor` | **Core ✅** | Returns stateless Markdown tutoring content. |
-| `solve_math_problem`| **Stub** | Returns error `-32004 Available in extended build`. |
-| `explain_formula` | **Stub** | Returns error `-32004 Available in extended build`. |
-| `calculator_assistant`| **Stub** | Returns error `-32004 Available in extended build`. |
-| `calculator://constants`| **Core ✅** | Resource for static mathematical constants. |
-| `calculator://history/{id}`| **Not Implemented** | Always returns a `404 Not Found` error. |
-| `calculator://stats`| **Core ✅** | Resource for process uptime only; no request counters. |
-| `formulas://library`| **Extended ✅** | Resource for a static list of mathematical formulas. |
-| `request://current`| **Extended ✅**| Debug resource that echoes current request info. |
-
-## 🚀 Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
 
-*   Node.js (v20.x or higher)
+*   Node.js ≥ 20.0.0
 *   npm or yarn
+*   Docker (for containerized deployment)
 
-### Installation
+### Installation & Running
 
 ```bash
 # Clone the repository
-git clone https://github.com/modelcontextprotocol/mcp-server-examples.git
-cd mcp-server-examples/streamable-http-stateless
+git clone https://github.com/yigitkonur/example-mcp-server-streamable-http-stateless
+cd example-mcp-server-streamable-http-stateless
 
 # Install dependencies
 npm install
 
-# Build the project
+# Build the project (compiles TypeScript to dist/)
 npm run build
-```
 
-### Running the Server
-
-```bash
-# Start the stateless server on port 1071
-npm run start:stateless
-
-# Or, run in development mode with auto-reload
+# Start the server in development mode (port 1071)
 npm run dev
 ```
 
-### Testing with MCP Inspector
-
-You can interact with the running server using the official MCP Inspector CLI. Ensure the server is running first.
+### Essential Commands
 
 ```bash
-# The CLI will connect to the server and list its capabilities
-npx @modelcontextprotocol/inspector http://localhost:1071/mcp
+npm run dev        # Development mode with hot-reload (uses tsx)
+npm run build      # Compile TypeScript to JavaScript in `dist/`
+npm run start      # Run the production-ready compiled server
+npm run lint       # Run code quality checks with ESLint
+npm run test       # Run the automated test suite
+npm run ci         # Run the full CI pipeline (lint + build + test)
 ```
 
-## 📋 API Usage Examples
+## 📐 Architecture Overview
 
-All requests are made to the single `/mcp` endpoint. No session headers are required.
+### Key Principles
 
-### Basic Calculation
+This server's architecture is defined by a commitment to modern best practices for building scalable and maintainable services.
+
+1.  **Stateless by Design:** The server shares absolutely no state between requests. Every request is handled in complete isolation.
+2.  **Ephemeral Instances & Explicit Cleanup:** The core of this pattern is creating a new `McpServer` and `Transport` for every request. These instances are explicitly destroyed when the request completes to prevent memory leaks.
+3.  **Clean Code Architecture:** The codebase is intentionally split into `types.ts` (for data contracts, schemas, and constants) and `server.ts` (for runtime logic), promoting maintainability and a clear separation of concerns.
+4.  **Resilient Error Handling:** The server uses a "fail-fast" and "no-leaks" error policy, throwing specific `McpError` types for predictable failures and wrapping all unexpected errors in a generic, safe response.
+5.  **Production Observability:** The server exposes `/health` and `/metrics` endpoints from the start, making it transparent and easy to monitor in production environments.
+
+### Architectural Diagrams
+
+#### Logical Request Flow
+
+This diagram shows how a single request is processed in our stateless model.
+
+```
+      Load Balancer (No Sticky Sessions Needed)
+               |
+    +----------+----------+----------+
+    |          |          |          |
+ Server 1   Server 2   Server 3   Server N  (Each server is identical)
+    |
+    | (Inside a single server handling one request)
+    ▼
+┌───────────────────────────┐
+│  HTTP Request (POST/GET)  │
+└────────────┬──────────────┘
+             │
+┌────────────▼──────────────┐
+│  Express.js Middleware    │
+│  (CORS, Rate Limit, Size) │
+├───────────────────────────┤
+│  handleMCPRequest Function│
+│ ┌───────────────────────┐ │
+│ │ Ephemeral McpServer   │ │ Create -> Connect -> Handle -> Destroy
+│ │ Ephemeral Transport   │ │
+│ └───────────────────────┘ │
+└────────────┬──────────────┘
+             │
+┌────────────▼──────────────┐
+│   HTTP Response / SSE     │
+└───────────────────────────┘
+```
+
+#### Code Structure
+
+This diagram shows how the source code is organized for maximum clarity and maintainability.```
+src/
+├── types.ts      # Data Contracts (Schemas, Constants, Type Interfaces)
+|                 #  - The "what" of our application.
+|                 #  - Stable, logic-free, and reusable.
+|
+└── server.ts     # Runtime Logic (Server, Handlers, Tools, Middleware)
+                  #  - The "how" of our application.
+                  #  - Implements all behavior and depends on types.ts.
+```
+
+## 🔧 Core Implementation Patterns
+
+This section highlights the most important, production-ready patterns demonstrated in this repository.
+
+### Pattern 1: The "Per-Request Instance" Lifecycle
+
+**The Principle:** To guarantee statelessness and prevent memory leaks, we follow a strict **create-use-destroy** lifecycle for server and transport objects within the scope of a single HTTP request handler.
+
+**The Implementation:**
+```typescript
+// src/server.ts
+const handleMCPRequest = async (req: Request, res: Response) => {
+  try {
+    // 1. CREATE: A fresh server and a stateless transport are created.
+    const server = createMCPServer();
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined, // CRITICAL: This enables stateless mode.
+    });
+
+    // 2. CONNECT & HANDLE: The ephemeral instances process the single request.
+    await server.connect(transport);
+    await transport.handleRequest(req, res, req.body);
+
+    // 3. CLEANUP: Once the connection closes, we MUST destroy the instances.
+    res.on('close', () => {
+      transport.close();
+      server.close(); // This prevents memory leaks.
+    });
+  } catch (error) {
+    // ... global error handling ...
+  }
+};
+```
+
+### Pattern 2: Resilient & Secure Error Handling
+
+**The Principle:** The server follows a "fail-fast" and "no-leaks" error policy. Predictable errors are reported with specific, protocol-compliant codes, while unexpected errors are caught and sanitized to prevent leaking internal details.
+
+**The Implementation:**
+
+1.  **Specific, Actionable Errors**: Predictable user errors, like division by zero, throw a specific `McpError`. This allows the client application to understand the failure and prompt the user for a correction.
+
+    ```typescript
+    // In the 'calculate' tool for the 'divide' operation:
+    if (b === 0) {
+      // Throw a structured error that the client can parse.
+      throw new McpError(
+        ErrorCode.InvalidParams, 
+        'Division by zero is not allowed.'
+      );
+    }
+    ```
+
+2.  **The "Safety Net" for Unexpected Errors**: The main `handleMCPRequest` function is wrapped in a `try...catch` block that acts as a safety net. It catches any unhandled exception, logs it internally, and returns a generic, safe error to the client.
+
+    ```typescript
+    // In src/server.ts -> handleMCPRequest
+    } catch (error) {
+      // 1. Log the full, detailed error for internal debugging.
+      requestLogger.error('Unhandled error in MCP request handler', { error });
+
+      // 2. Send a generic, protocol-compliant error to the client.
+      //    This prevents leaking stack traces or implementation details.
+      res.status(500).json({
+        jsonrpc: '2.0',
+        error: {
+          code: ErrorCode.InternalError,
+          message: 'An internal server error occurred.',
+        },
+        id: req.body?.id || null,
+      });
+    }
+    ```
+
+### Pattern 3: Strict Separation of Concerns (`types.ts` vs. `server.ts`)
+
+**The Principle:** A clean architecture separates data contracts (the "what") from implementation logic (the "how"). This makes the code easier to maintain, test, and reason about.
+
+**The Implementation:**
+*   **`src/types.ts`**: This file contains only data definitions. It has no runtime logic. It defines all Zod schemas for input validation, shared constants, and TypeScript interfaces. It is the stable foundation of the application.
+*   **`src/server.ts`**: This file contains all runtime logic. It imports the data contracts from `types.ts` and uses them to implement the server's behavior, including the Express app, middleware, tool handlers, and startup sequence.
+
+### Pattern 4: Production-Ready Observability
+
+**The Principle:** A production service must be transparent. This server includes built-in endpoints for health checks and metrics, allowing it to be easily integrated into modern monitoring and orchestration systems.
+
+**The Implementation:**
+*   **`/health`:** A simple endpoint that returns a `200 OK` status with basic uptime and memory information. Perfect for load balancers and container readiness probes.
+*   **`/metrics`:** Exposes key performance indicators (KPIs) like request duration and tool execution times in a **Prometheus-compatible format**, ready to be scraped by monitoring systems like Prometheus or Grafana.
+
+## 🧪 Testing & Validation
+
+### Health & Metrics
+
+Verify the server's operational status.
 
 ```bash
-curl -X POST http://localhost:1071/mcp \
-     -H 'Content-Type: application/json' \
-     -d '[{
-       "jsonrpc": "2.0",
-       "id": "req-1",
-       "method": "tools/call",
-       "params": {
-         "name": "calculate",
-         "arguments": { "a": 100, "b": 5, "op": "divide", "precision": 4 }
-       }
-     }]'
+# Check basic health (responds with 200 OK if running)
+curl http://localhost:1071/health
 
-# Response:
-# {"jsonrpc":"2.0","id":"req-1","result":{"content":[{"type":"text","text":"DIVIDE: 100 ÷ 5 = 20\n\nSteps:\nInput: 100 divide 5\nDivision: 100 ÷ 5 = 20\nFinal result (4 decimal places): 20"}],"metadata":{...}}}
+# Check Prometheus-style metrics for monitoring systems
+curl http://localhost:1071/metrics
 ```
 
-### Streaming Progress Demonstration
+### Manual Request
 
-Use the `-N` (no-buffering) flag with `curl` to see the Server-Sent Events (SSE) as they arrive.
+Send a direct `curl` request to test a tool's functionality.
 
+#### Testing a Success Case
 ```bash
-curl -N -X POST http://localhost:1071/mcp \
-     -H 'Content-Type: application/json' \
-     -d '[{
-       "jsonrpc": "2.0",
-       "id": "req-2",
-       "method": "tools/call",
-       "params": {
-         "name": "demo_progress",
-         "arguments": {}
-       }
-     }]'
-
-# Expected SSE stream output (events arrive over 1 second):
-# event: progress
-# data: {"progressToken":"...","progress":0.2,"level":"info","data":"Progress step 1 of 5"}
-#
-# event: progress
-# data: {"progressToken":"...","progress":0.4,"level":"info","data":"Progress step 2 of 5"}
-#
-# event: progress
-# data: {"progressToken":"...","progress":0.6,"level":"info","data":"Progress step 3 of 5"}
-#
-# event: progress
-# data: {"progressToken":"...","progress":0.8,"level":"info","data":"Progress step 4 of 5"}
-#
-# event: progress
-# data: {"progressToken":"...","progress":1,"level":"info","data":"Progress step 5 of 5"}
-#
-# event: data
-# data: {"jsonrpc":"2.0","id":"req-2","result":{"content":[{"type":"text","text":"Progress demonstration completed with 5 steps"}]}}
+# Test the 'calculate' tool
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"calculate","arguments":{"a":15,"b":7,"op":"add"}},"id":1}' \
+  http://localhost:1071/mcp
 ```
 
-## 🧠 State Management Model
-
-**This server is explicitly stateless.** All state required to process a request must be contained within the request itself. The server does not and cannot retain information between requests.
-
-#### What IS NOT Stored Server-Side
--   ❌ **Calculation History**: The server has no memory of past calculations.
--   ❌ **User Sessions**: There is no concept of a user session.
--   ❌ **Request Correlation**: The server does not link multiple requests together.
-
-#### What IS Available (Per-Process or Per-Request)
--   ✅ **Process Uptime**: Accessible via the `calculator://stats` resource. This is global to the Node.js process, not a specific request.
--   ✅ **Static Resources**: The `calculator://constants` and `formulas://library` resources are read from static definitions on each call.
--   ✅ **Request Context**: The server has access to the current HTTP request headers and body, but only for the duration of that single request.
-
-## 🛡️ Security Model
-
-A stateless architecture changes the security model by eliminating session-based vulnerabilities.
-
--   **No Session Hijacking**: Since there are no sessions, they cannot be hijacked.
--   **Per-Request Authentication**: Security is handled on a per-request basis. In a production scenario, you would add middleware to validate an `Authorization` header containing a stateless token (e.g., JWT) on every call.
--   **Reduced Attack Surface**: The absence of server-side state storage reduces the potential for state-based attacks like data corruption or information leakage between sessions.
--   **Input Validation**: All parameters are rigorously validated on every request using Zod schemas, preventing malformed data from propagating.
-
-## 🎓 Educational Tool (Optional)
-
-For learning purposes, the server supports an optional educational echo tool via the `SAMPLE_TOOL_NAME` environment variable:
-
+#### Testing an Error Case
+This command intentionally triggers the `InvalidParams` error to demonstrate the server's resilient error handling.
 ```bash
-# Start server with educational tool
-SAMPLE_TOOL_NAME=educational_echo npm run start:stateless
+# Test division by zero
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"calculate","arguments":{"a":10,"b":0,"op":"divide"}},"id":2}' \
+  http://localhost:1071/mcp
 
-# Test the educational tool
-curl -X POST http://localhost:1071/mcp \
-     -H 'Content-Type: application/json' \
-     -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"educational_echo","arguments":{"message":"Hello MCP!"}},"id":1}'
-
-# Response: Sample tool "educational_echo" received: Hello MCP!
+# Expected Error Response:
+# {
+#   "jsonrpc": "2.0",
+#   "error": {
+#     "code": -32602,
+#     "message": "Division by zero is not allowed."
+#   },
+#   "id": 2
+# }
 ```
 
-When set, the educational tool appears first in the tools list. When unset, only standard calculator tools are available.
+### Interactive Testing with MCP Inspector
 
-## 🧪 Testing
-
-This project includes a test suite verifying its stateless behavior.
-
+Use the official inspector for a rich, interactive testing experience.
 ```bash
-# Run all available tests
-npm test
-
-# Run tests with a code coverage report
-npm run test:coverage
-
-# Run tests in watch mode for development
-npm run test:watch
+# The inspector connects to the server's endpoint via HTTP.
+npx @modelcontextprotocol/inspector --cli http://localhost:1071/mcp
 ```
 
-## Production-Ready Features
+## 🏭 Deployment & Configuration
 
-This server includes several features designed for observability in a production environment.
+### Configuration
 
-### Structured Logging
+The server is configured using environment variables, making it perfect for containerized deployments.
 
-All console output is structured JSON, including a unique `requestId` to correlate all logs associated with a single HTTP request. This is essential for debugging in a distributed, serverless environment.
+| Variable | Description | Default |
+| :--- |:--- |:--- |
+| `PORT` | The port for the HTTP server to listen on. | `1071` |
+| `LOG_LEVEL` | Logging verbosity (`debug`, `info`, `warn`, `error`). | `info` |
+| `CORS_ORIGIN` | Allowed origin for CORS. **Must be restricted in production.** | `*` |
+| `RATE_LIMIT_MAX` | Max requests per window per IP. | `1000` |
+| `RATE_LIMIT_WINDOW`| Rate limit window in milliseconds. | `900000` (15 min) |
+| `NODE_ENV` | Sets the environment. Use `production` for Express optimizations. | `development` |
 
-**Example Log Entry:**
-```json
-{"timestamp":"2023-10-27T18:30:00.000Z","level":"info","message":"Created fresh MCP server instance","context":{"requestId":"..."}}
-```
+### Deployment
 
-### Monitoring & Health Checks
+This server is designed from the ground up for modern, scalable deployment platforms. The included multi-stage `Dockerfile` and `docker-compose.yml` provide a secure and efficient container.
 
-The server exposes several endpoints for monitoring and health checks:
-
-| Endpoint | Method | Description |
-|:---|:---|:---|
-| `/health` | `GET` | A simple health check, returns status `healthy`. |
-| `/health/detailed` | `GET` | Provides detailed system, application, and characteristic info. |
-| `/metrics` | `GET` | Exposes basic metrics in a Prometheus-compatible format. |
-
-**Example Health Check:**
-```bash
-curl -s http://localhost:1071/health | jq
-{
-  "status": "healthy",
-  "timestamp": "2023-10-27T18:35:00.000Z",
-  "pattern": "stateless",
-  "uptime": 300.123,
-  "memory": { "rss": 50123456, ... },
-  "version": "1.0.0"
-}
-```
-
-## 📚 Official Resources
-
-*   [MCP Specification](https://spec.modelcontextprotocol.io)
-*   [Model Context Protocol Documentation](https://modelcontextprotocol.io)
-*   [Streamable HTTP Transport Documentation](https://spec.modelcontextprotocol.io/specification/basic/transports/#streamable-http)
+*   **Serverless:** The `handleMCPRequest` function can be exported directly as a serverless function handler for platforms like Vercel or AWS Lambda.
+*   **Kubernetes:** The Docker image is ready to be deployed with a Horizontal Pod Autoscaler (HPA), allowing the cluster to automatically scale replicas up and down based on CPU or request load.

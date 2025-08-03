@@ -4,129 +4,233 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **Streamable HTTP Stateless MCP Server** - a reference implementation demonstrating true stateless Model Context Protocol (MCP) architecture. Unlike traditional MCP servers that maintain sessions, this server creates fresh instances for every request, enabling infinite horizontal scaling and serverless deployment.
+This is an **Educational Reference Implementation** of a Stateless HTTP Streamable MCP Server. This is NOT just a simple example - it's a comprehensive teaching resource designed to demonstrate production-ready patterns, security best practices, and modern deployment strategies for Model Context Protocol servers.
 
-### Core Architecture
+### Educational Mission
+This repository serves as a **masterclass** in building stateless MCP servers, covering:
+- **Architecture Principles**: True stateless design enabling infinite scaling
+- **Security Engineering**: DNS rebinding protection, rate limiting, error sanitization
+- **SDK Integration**: Trust the SDK for protocol concerns, avoid redundant validation
+- **Code Quality**: Clean, idiomatic TypeScript over premature optimizations
+- **Production Readiness**: Monitoring, containerization, serverless deployment
 
-- **Stateless Pattern**: Every request spawns a new `McpServer` instance via `createMCPServer()` factory
-- **Transport**: Uses `StreamableHTTPServerTransport` for HTTP+SSE communication
-- **No Sessions**: No `Mcp-Session-Id` headers, no server-side state
-- **Request Isolation**: Each HTTP request gets its own logger context with unique `requestId`
-- **Express Wrapper**: Single endpoint `/mcp` handles both POST commands and GET SSE streams
+### Core Architecture Patterns
 
-### Key Components
+#### 1. Fresh Instance Per Request (The Golden Rule)
+```typescript
+// In handleMCPRequest() - this happens for EVERY request:
+const server = createMCPServer();          // 1. Fresh server instance
+const transport = new StreamableHTTPServerTransport({
+  sessionIdGenerator: undefined,            // 2. Stateless mode (critical!)
+  enableDnsRebindingProtection: true,      // 3. Security by design
+});
+await server.connect(transport);           // 4. Connect ephemeral instances
+await transport.handleRequest(req, res);   // 5. Process single request
+// 6. Cleanup happens in res.on('close') listener
+```
 
-- `src/stateless-production-server.ts`: Main server implementation with Express app, MCP factory, and all tools/prompts/resources
-- Server runs on port **1071** (not the typical 3000 mentioned in some scripts)
-- Fresh server instance per request pattern at `handleMCPRequest()` function
-- Built-in monitoring endpoints: `/health`, `/health/detailed`, `/metrics`
+#### 2. SDK Trust Principle
+- **DO**: Let `StreamableHTTPServerTransport` handle protocol validation internally
+- **DON'T**: Create custom middleware to duplicate SDK validation logic
+- **WHY**: SDK is the source of truth; duplicating creates maintenance burden
 
-## Common Commands
+#### 3. Security-First Design
+- DNS rebinding protection (mandatory for local servers)
+- Rate limiting (1000 requests per 15-minute window)
+- Production error sanitization (hide stack traces)
+- Request size validation before JSON parsing
 
-### Development Workflow
+#### 4. Clean Code Over Optimization
+- Simple object creation instead of object pooling
+- Idiomatic TypeScript patterns
+- Clear, maintainable code structure
+- Performance optimizations only when proven necessary
+
+## Key Implementation Details
+
+### Server Configuration
+- **Port**: Always 1071 (not 3000)
+- **Architecture**: Stateless HTTP + SSE streaming
+- **Transport**: `StreamableHTTPServerTransport` with `sessionIdGenerator: undefined`
+- **Security**: DNS rebinding protection enabled by default
+- **Logging**: Structured JSON with request correlation via `requestId`
+
+### File Structure
+```
+src/
+├── types.ts    # Data contracts (schemas, constants, interfaces)
+│               # - Completely logic-free, stable dependency
+│               # - All Zod schemas and TypeScript type definitions
+│               # - Application-wide constants and configurations
+└── server.ts   # Runtime logic (main implementation)
+                # - Express app setup with middleware
+                # - createMCPServer() factory and request handlers
+                # - Fresh instance per request lifecycle management
+                # - Monitoring endpoints (/health, /metrics)
+```
+
+### Tools Implemented
+- `calculate`: Core arithmetic with progress notifications
+- `demo_progress`: Progress notification demonstration
+- `solve_math_problem`: Stub tool (shows graceful degradation)
+- `explain_formula`: Stub tool
+- `calculator_assistant`: Stub tool
+
+### Resources Available
+- `calculator://constants`: Math constants (pi, e)
+- `calculator://stats`: Process uptime metrics
+- `calculator://history/*`: Always returns 404 (stateless limitation)
+- `formulas://library`: Mathematical formula collection
+- `request://current`: Current request metadata
+
+### Prompts Defined
+- `explain-calculation`: Step-by-step calculation explanations
+- `generate-problems`: Practice problem generation
+- `calculator-tutor`: Interactive tutoring sessions
+
+## Common Development Commands
+
+### Essential Workflow
 ```bash
 # Install dependencies
 npm install
 
-# Install TypeScript declarations (if build fails)
-npm install --save-dev @types/express @types/cors
-
-# Build (critical: requires ES modules with "bundler" moduleResolution)
-npm run build
-
-# Development with auto-reload
+# Development with hot-reload (uses tsx)
 npm run dev
 
-# Start stateless server (port 1071)
-npm run start:stateless
+# Build TypeScript to dist/
+npm run build
 
-# Background server with nohup (recommended for testing)
-nohup npm run start:stateless > /tmp/stateless-server.log 2>&1 &
+# Start compiled server
+npm start
+
+# Run full CI pipeline (lint + typecheck + build)
+npm run ci
 ```
 
 ### Testing & Validation
 ```bash
-# Run all tests
-npm run test
+# Health checks
+curl http://localhost:1071/health
+curl http://localhost:1071/health/detailed
+curl http://localhost:1071/metrics
 
-# Integration tests only
-npm run test:integration
-
-# Test with coverage
-npm run test:coverage
-
-# Test single file/pattern
-npm run test -- --testPathPattern=stateless-server
-
-# Health check (server on 1071, not 3000)
-curl -s http://localhost:1071/health
-
-# MCP Calculator test (requires proper Accept headers)
-curl -s -X POST -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" \
+# MCP tool test (note required headers)
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"calculate","arguments":{"a":15,"b":7,"op":"add"}},"id":1}' \
   http://localhost:1071/mcp
-```
 
-### Quality & CI
-```bash
-# Lint code
-npm run lint
-npm run lint:fix
-
-# Type checking only (no emit)
-npm run typecheck
-
-# Format code
-npm run format
-
-# Full CI pipeline
-npm run ci
-```
-
-### MCP Inspector Testing
-```bash
-# Build first, then test with Inspector
-npm run build
+# Interactive testing
 npx @modelcontextprotocol/inspector --cli http://localhost:1071/mcp
+```
+
+### Code Quality
+```bash
+npm run lint           # ESLint checks
+npm run lint:fix       # Auto-fix linting issues
+npm run typecheck      # TypeScript type checking only
+npm run format         # Prettier formatting
+npm run format:check   # Check formatting without changes
 ```
 
 ## Critical Configuration Notes
 
-### TypeScript Configuration
-- **CRITICAL**: `tsconfig.json` uses `"moduleResolution": "bundler"` (not "node") to generate proper ES modules
-- Package.json specifies `"type": "module"` requiring ES module output
-- Build outputs to `dist/` directory with source maps and declarations
+### TypeScript Settings
+- Uses `"moduleResolution": "bundler"` (not "node")
+- Package.json has `"type": "module"`
+- Outputs ES modules to `dist/` with source maps and declarations
+- Strict TypeScript configuration enabled
 
-### MCP Transport Requirements
-- Clients must send `Accept: application/json, text/event-stream` header
-- Server responds with SSE streams for real-time communication
-- No session handshake - each request is independent
+### Environment Variables
+```bash
+PORT=1071                    # Server port
+CORS_ORIGIN="*"             # CORS policy (restrict in production)
+LOG_LEVEL="info"            # Logging level (use "debug" for development)
+RATE_LIMIT_MAX=1000         # Rate limiting
+RATE_LIMIT_WINDOW=900000    # Rate limit window (15 minutes)
+NODE_ENV=production         # Production optimizations
+```
 
-### Server Behavior
-- **Port**: Always 1071 (despite some scripts mentioning 3000)
-- **Logging**: Structured JSON logs with request correlation via `requestId`
-- **Cleanup**: Transport and server instances are disposed after each request
-- **Rate Limiting**: 1000 requests per 15-minute window on `/mcp` endpoint
+### Security Requirements
+- DNS rebinding protection always enabled
+- Rate limiting on `/mcp` endpoint
+- Stack traces hidden in production
+- CORS properly configured for environment
+- Request size validation (1MB limit)
 
-## Development Patterns
+## Educational Patterns to Follow
 
 ### Adding New Tools
-Tools are defined in `createMCPServer()` factory. Each tool gets a fresh server instance per call:
-- Use `z.` schemas for parameter validation
-- Generate unique `requestId` for request correlation
-- Implement progress notifications via `sendNotification` for streaming tools
-- Follow stateless principle - no cross-request state
+1. Define schema in `types.ts` schemas object (compiled once at startup)
+2. Use Zod for parameter validation with `.describe()` for documentation
+3. Generate unique `requestId` for correlation
+4. Implement progress notifications if appropriate
+5. Follow stateless principle - no cross-request state
+6. Use `SchemaInput<'toolName'>` type for type-safe parameter handling
 
-### Testing Stateless Behavior
-- Tests should verify fresh server instances are created
-- Mock `createMCPServer()` to verify isolation
-- Test concurrent requests don't interfere
-- Validate no shared state between requests
+### Error Handling Best Practices
+```typescript
+// Use protocol-compliant McpError for predictable failures
+import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 
-### Monitoring Production
-- Use `/health/detailed` for comprehensive system status
-- Monitor logs for request correlation and performance
-- `/metrics` endpoint provides Prometheus-style metrics
-- Server uptime in `/stats` resource reflects process uptime only
+throw new McpError(
+  ErrorCode.InvalidParams,
+  'Division by zero is not allowed.'
+);
 
-This server is designed for serverless environments where each request may hit a different instance, making traditional session-based patterns impossible.
+// Global error handler catches unexpected errors
+requestLogger.error('Unhandled error in MCP request handler', { error });
+res.status(500).json({
+  jsonrpc: '2.0',
+  error: {
+    code: ErrorCode.InternalError,
+    message: 'An internal server error occurred.'
+  },
+  id: req.body?.id || null
+});
+```
+
+### Request Lifecycle Pattern
+1. Generate unique `requestId` for correlation
+2. Create contextual logger with `requestId`
+3. Create fresh MCP server and transport instances
+4. Process request through SDK transport
+5. Clean up instances on response close
+6. Collect metrics for monitoring
+
+## Testing Stateless Behavior
+
+### Verification Points
+- Each request creates new server instance
+- No shared state between concurrent requests
+- Request correlation works via `requestId`
+- Cleanup happens properly on connection close
+- Metrics collection doesn't leak memory
+
+### Common Issues to Watch
+- Forgetting to set `sessionIdGenerator: undefined`
+- Missing cleanup in `res.on('close')` listener
+- Sharing state accidentally via closures
+- Not handling concurrent requests properly
+
+## Production Deployment
+
+### Containerization
+- Multi-stage Dockerfile (builder + production stages)
+- Docker Compose with health checks
+- Minimal production image (no dev dependencies)
+
+### Serverless Ready
+- `handleMCPRequest` function can be exported as serverless handler
+- No persistent state to manage
+- Scales infinitely without coordination
+
+### Monitoring
+- Structured JSON logging with correlation
+- Prometheus-style metrics endpoint
+- Health checks for load balancers
+- Request duration and tool execution histograms
+
+This server demonstrates that stateless architecture enables simpler, more secure, and infinitely scalable MCP implementations. The educational approach teaches both what to build and what NOT to build, making it an invaluable learning resource.

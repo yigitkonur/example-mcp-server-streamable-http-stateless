@@ -37,6 +37,7 @@
     "removeComments": false,
     "importHelpers": true,
     "newLine": "lf",
+    "emitDeclarationOnly": false,
 
     // JavaScript Support
     "allowJs": false,
